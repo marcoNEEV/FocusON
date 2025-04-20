@@ -7,21 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9BB15F492D70B71D00D84338 /* tibetan_Gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9BB15F482D70B71D00D84338 /* tibetan_Gong.wav */; };
+		9B00FA1B2D9F8BC900E2134A /* tibetan_Gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */; };
 		9BE907B62D5CC673006B607C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BE907B52D5CC673006B607C /* Assets.xcassets */; };
 		9BE907BA2D5CC673006B607C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BE907B92D5CC673006B607C /* Preview Assets.xcassets */; };
 		9BE907C12D5CCDBA006B607C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C02D5CCDBA006B607C /* AppDelegate.swift */; };
 		9BE907C32D5CEA22006B607C /* FocusONApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C22D5CEA22006B607C /* FocusONApp.swift */; };
+		9BE907C52DA3475100006B607C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C42DA3475100006B607C /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		9BB15F482D70B71D00D84338 /* tibetan_Gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = tibetan_Gong.wav; path = FocusON/tibetan_Gong.wav; sourceTree = "<group>"; };
+		9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tibetan_Gong.wav; sourceTree = "<group>"; };
 		9BE907AE2D5CC670006B607C /* FocusON.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusON.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BE907B52D5CC673006B607C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9BE907B72D5CC673006B607C /* FocusON.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusON.entitlements; sourceTree = "<group>"; };
 		9BE907B92D5CC673006B607C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		9BE907C02D5CCDBA006B607C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9BE907C22D5CEA22006B607C /* FocusONApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusONApp.swift; sourceTree = "<group>"; };
+		9BE907C42DA3475100006B607C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,7 +40,6 @@
 		9BE907A52D5CC670006B607C = {
 			isa = PBXGroup;
 			children = (
-				9BB15F482D70B71D00D84338 /* tibetan_Gong.wav */,
 				9BE907B02D5CC670006B607C /* FocusON */,
 				9BE907AF2D5CC670006B607C /* Products */,
 			);
@@ -60,6 +61,8 @@
 				9BE907B82D5CC673006B607C /* Preview Content */,
 				9BE907C02D5CCDBA006B607C /* AppDelegate.swift */,
 				9BE907C22D5CEA22006B607C /* FocusONApp.swift */,
+				9BE907C42DA3475100006B607C /* ContentView.swift */,
+				9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */,
 			);
 			path = FocusON;
 			sourceTree = "<group>";
@@ -130,7 +133,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9BB15F492D70B71D00D84338 /* tibetan_Gong.wav in Resources */,
+				9B00FA1B2D9F8BC900E2134A /* tibetan_Gong.wav in Resources */,
 				9BE907BA2D5CC673006B607C /* Preview Assets.xcassets in Resources */,
 				9BE907B62D5CC673006B607C /* Assets.xcassets in Resources */,
 			);
@@ -145,6 +148,7 @@
 			files = (
 				9BE907C12D5CCDBA006B607C /* AppDelegate.swift in Sources */,
 				9BE907C32D5CEA22006B607C /* FocusONApp.swift in Sources */,
+				9BE907C52DA3475100006B607C /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
