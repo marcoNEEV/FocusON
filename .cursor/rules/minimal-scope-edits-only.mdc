@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Rule Description:
+Cursor must only modify the code that is explicitly mentioned in the user prompt. Do not touch or refactor:
+- Unrelated code
+- Nearby functions or logic
+- Other files not named in the request
+
+# If Cursor Identifies:
+- A bug
+- A performance issue
+- A code smell or security concern → Cursor should ask the user whether to fix it, but must not proceed automatically.
+
+**Goal:
+The goal is to respect the user’s intended scope of change, especially when working step-by-step or in a sensitive project context.

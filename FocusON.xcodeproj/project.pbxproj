@@ -8,15 +8,35 @@
 
 /* Begin PBXBuildFile section */
 		9B00FA1B2D9F8BC900E2134A /* tibetan_Gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */; };
-		9BE907B62D5CC673006B607C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BE907B52D5CC673006B607C /* Assets.xcassets */; };
-		9BE907BA2D5CC673006B607C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BE907B92D5CC673006B607C /* Preview Assets.xcassets */; };
+		9BB03F172DB8C28800A7F67A /* FocusON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F092DB8C28800A7F67A /* FocusON.swift */; };
+		9BB03F182DB8C28800A7F67A /* AppDelegateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F0A2DB8C28800A7F67A /* AppDelegateExtensions.swift */; };
+		9BB03F192DB8C28800A7F67A /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F0B2DB8C28800A7F67A /* Utilities.swift */; };
+		9BB03F1A2DB8C28800A7F67A /* TimerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F0C2DB8C28800A7F67A /* TimerModel.swift */; };
+		9BB03F1B2DB8C28800A7F67A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BB03F0E2DB8C28800A7F67A /* Assets.xcassets */; };
+		9BB03F1C2DB8C28800A7F67A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BB03F102DB8C28800A7F67A /* Preview Assets.xcassets */; };
+		9BB03F1F2DB8C28800A7F67A /* MenuBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F132DB8C28800A7F67A /* MenuBuilder.swift */; };
+		9BB03F212DB8C28800A7F67A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F152DB8C28800A7F67A /* ContentView.swift */; };
+		9BB03F222DB8C28800A7F67A /* Phase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F162DB8C28800A7F67A /* Phase.swift */; };
 		9BE907C12D5CCDBA006B607C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C02D5CCDBA006B607C /* AppDelegate.swift */; };
 		9BE907C32D5CEA22006B607C /* FocusONApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C22D5CEA22006B607C /* FocusONApp.swift */; };
-		9BE907C52DA3475100006B607C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C42DA3475100006B607C /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tibetan_Gong.wav; sourceTree = "<group>"; };
+		9BB03F062DB8BD1900A7F67A /* Phase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Phase.swift; sourceTree = "<group>"; };
+		9BB03F092DB8C28800A7F67A /* FocusON.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FocusON.swift; sourceTree = "<group>"; };
+		9BB03F0A2DB8C28800A7F67A /* AppDelegateExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegateExtensions.swift; sourceTree = "<group>"; };
+		9BB03F0B2DB8C28800A7F67A /* Utilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
+		9BB03F0C2DB8C28800A7F67A /* TimerModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimerModel.swift; sourceTree = "<group>"; };
+		9BB03F0D2DB8C28800A7F67A /* FocusON.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = FocusON.entitlements; sourceTree = "<group>"; };
+		9BB03F0E2DB8C28800A7F67A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9BB03F102DB8C28800A7F67A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		9BB03F112DB8C28800A7F67A /* FocusONApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FocusONApp.swift; sourceTree = "<group>"; };
+		9BB03F122DB8C28800A7F67A /* tibetan_Gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tibetan_Gong.wav; sourceTree = "<group>"; };
+		9BB03F132DB8C28800A7F67A /* MenuBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MenuBuilder.swift; sourceTree = "<group>"; };
+		9BB03F142DB8C28800A7F67A /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		9BB03F152DB8C28800A7F67A /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9BB03F162DB8C28800A7F67A /* Phase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Phase.swift; sourceTree = "<group>"; };
 		9BE907AE2D5CC670006B607C /* FocusON.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusON.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BE907B52D5CC673006B607C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9BE907B72D5CC673006B607C /* FocusON.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusON.entitlements; sourceTree = "<group>"; };
@@ -37,6 +57,34 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9BB03F082DB8C28800A7F67A /* FocusON */ = {
+			isa = PBXGroup;
+			children = (
+				9BB03F092DB8C28800A7F67A /* FocusON.swift */,
+				9BB03F0A2DB8C28800A7F67A /* AppDelegateExtensions.swift */,
+				9BB03F0B2DB8C28800A7F67A /* Utilities.swift */,
+				9BB03F0C2DB8C28800A7F67A /* TimerModel.swift */,
+				9BB03F0D2DB8C28800A7F67A /* FocusON.entitlements */,
+				9BB03F0E2DB8C28800A7F67A /* Assets.xcassets */,
+				9BB03F0F2DB8C28800A7F67A /* Preview Content */,
+				9BB03F112DB8C28800A7F67A /* FocusONApp.swift */,
+				9BB03F122DB8C28800A7F67A /* tibetan_Gong.wav */,
+				9BB03F132DB8C28800A7F67A /* MenuBuilder.swift */,
+				9BB03F142DB8C28800A7F67A /* AppDelegate.swift */,
+				9BB03F152DB8C28800A7F67A /* ContentView.swift */,
+				9BB03F162DB8C28800A7F67A /* Phase.swift */,
+			);
+			name = FocusON;
+			sourceTree = "<group>";
+		};
+		9BB03F0F2DB8C28800A7F67A /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				9BB03F102DB8C28800A7F67A /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
 		9BE907A52D5CC670006B607C = {
 			isa = PBXGroup;
 			children = (
@@ -60,6 +108,8 @@
 				9BE907B72D5CC673006B607C /* FocusON.entitlements */,
 				9BE907B82D5CC673006B607C /* Preview Content */,
 				9BE907C02D5CCDBA006B607C /* AppDelegate.swift */,
+				9BB03F082DB8C28800A7F67A /* FocusON */,
+				9BB03F062DB8BD1900A7F67A /* Phase.swift */,
 				9BE907C22D5CEA22006B607C /* FocusONApp.swift */,
 				9BE907C42DA3475100006B607C /* ContentView.swift */,
 				9B00FA1A2D9F8BC900E2134A /* tibetan_Gong.wav */,
@@ -134,8 +184,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				9B00FA1B2D9F8BC900E2134A /* tibetan_Gong.wav in Resources */,
-				9BE907BA2D5CC673006B607C /* Preview Assets.xcassets in Resources */,
-				9BE907B62D5CC673006B607C /* Assets.xcassets in Resources */,
+				9BB03F1C2DB8C28800A7F67A /* Preview Assets.xcassets in Resources */,
+				9BB03F1B2DB8C28800A7F67A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,8 +197,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				9BE907C12D5CCDBA006B607C /* AppDelegate.swift in Sources */,
+				9BB03F212DB8C28800A7F67A /* ContentView.swift in Sources */,
 				9BE907C32D5CEA22006B607C /* FocusONApp.swift in Sources */,
-				9BE907C52DA3475100006B607C /* ContentView.swift in Sources */,
+				9BB03F222DB8C28800A7F67A /* Phase.swift in Sources */,
+				9BB03F192DB8C28800A7F67A /* Utilities.swift in Sources */,
+				9BB03F182DB8C28800A7F67A /* AppDelegateExtensions.swift in Sources */,
+				9BB03F172DB8C28800A7F67A /* FocusON.swift in Sources */,
+				9BB03F1F2DB8C28800A7F67A /* MenuBuilder.swift in Sources */,
+				9BB03F1A2DB8C28800A7F67A /* TimerModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

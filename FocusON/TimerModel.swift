@@ -1,18 +1,5 @@
-import Cocoa
-
-// MARK: - PhaseType
-enum PhaseType {
-    case focus
-    case relax
-}
-
-// MARK: - Phase
-struct Phase {
-    let duration: Int
-    let backgroundColor: NSColor
-    let label: String
-    let type: PhaseType
-}
+import Foundation
+import AppKit
 
 // MARK: - TimerState
 enum TimerState {
@@ -24,9 +11,9 @@ enum TimerState {
 // MARK: - TimerModel
 class TimerModel {
     var phases: [Phase]
-    var currentPhaseIndex: Int = 0
-    var countdownSeconds: Int = 0
-    var timerState: TimerState = .notStarted
+    private(set) var currentPhaseIndex: Int = 0
+    private(set) var countdownSeconds: Int = 0
+    private(set) var timerState: TimerState = .notStarted
     private var timer: Timer?
     
     // Called every second or whenever a state changes
@@ -38,6 +25,12 @@ class TimerModel {
         self.phases = phases
     }
     
+    deinit {
+        // Clean up timer to prevent memory leaks
+        timer?.invalidate()
+    }
+    
+    /// Starts the timer from the beginning of the first phase
     func start() {
         currentPhaseIndex = 0
         countdownSeconds = phases[currentPhaseIndex].duration
@@ -46,6 +39,7 @@ class TimerModel {
         updateCallback?()
     }
     
+    /// Pauses the current timer without resetting it
     func pause() {
         timer?.invalidate()
         timer = nil
@@ -53,12 +47,14 @@ class TimerModel {
         updateCallback?()
     }
     
+    /// Resumes the timer from its paused state
     func resume() {
         timerState = .running
         scheduleTimer()
         updateCallback?()
     }
     
+    /// Resets the timer to initial state
     func reset() {
         timer?.invalidate()
         timer = nil
@@ -68,6 +64,7 @@ class TimerModel {
         updateCallback?()
     }
     
+    /// Called every second by the timer to update countdown
     @objc func tick() {
         countdownSeconds -= 1
         if countdownSeconds <= 0 {
@@ -76,6 +73,7 @@ class TimerModel {
         updateCallback?()
     }
     
+    /// Advances to the next phase in the cycle
     func nextPhase() {
         currentPhaseIndex = (currentPhaseIndex + 1) % phases.count
         countdownSeconds = phases[currentPhaseIndex].duration
@@ -83,6 +81,7 @@ class TimerModel {
         updateCallback?()
     }
     
+    /// Creates and schedules the timer on the main thread
     private func scheduleTimer() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }

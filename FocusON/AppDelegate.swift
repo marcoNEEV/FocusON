@@ -1,283 +1,9 @@
 import Cocoa
+import CoreText
 import IOKit.pwr_mgt  // For sleep prevention
 #if os(macOS) && canImport(ServiceManagement)
 import ServiceManagement  // For login item persistence on macOS 13.0+
 #endif
-
-// MARK: - Sleep Prevention Globals
-var sleepAssertionID: IOPMAssertionID = 0
-
-func enablePreventSleep() -> Bool {
-    let reasonForActivity = "Prevent sleep while FocusON is active" as CFString
-    let result = IOPMAssertionCreateWithName(kIOPMAssertionTypeNoDisplaySleep as CFString,
-                                             IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                             reasonForActivity,
-                                             &sleepAssertionID)
-    return (result == kIOReturnSuccess)
-}
-
-func disablePreventSleep() {
-    IOPMAssertionRelease(sleepAssertionID)
-}
-
-// MARK: - PhaseType
-enum PhaseType {
-    case focus
-    case relax
-}
-
-// MARK: - Phase
-struct Phase {
-    let duration: Int
-    let backgroundColor: NSColor
-    let label: String
-    let type: PhaseType
-}
-
-// MARK: - TimerState
-enum TimerState {
-    case notStarted
-    case running
-    case paused
-}
-
-// MARK: - TimerModel
-class TimerModel {
-    var phases: [Phase]
-    var currentPhaseIndex: Int = 0
-    var countdownSeconds: Int = 0
-    var timerState: TimerState = .notStarted
-    private var timer: Timer?
-    
-    // Called every second or whenever a state changes
-    var updateCallback: (() -> Void)?
-    // Called at the end of each phase
-    var phaseTransitionCallback: (() -> Void)?
-    
-    init(phases: [Phase]) {
-        self.phases = phases
-    }
-    
-    func start() {
-        currentPhaseIndex = 0
-        countdownSeconds = phases[currentPhaseIndex].duration
-        timerState = .running
-        scheduleTimer()
-        updateCallback?()
-    }
-    
-    func pause() {
-        timer?.invalidate()
-        timer = nil
-        timerState = .paused
-        updateCallback?()
-    }
-    
-    func resume() {
-        timerState = .running
-        scheduleTimer()
-        updateCallback?()
-    }
-    
-    func reset() {
-        timer?.invalidate()
-        timer = nil
-        timerState = .notStarted
-        countdownSeconds = 0
-        currentPhaseIndex = 0
-        updateCallback?()
-    }
-    
-    @objc func tick() {
-        countdownSeconds -= 1
-        if countdownSeconds <= 0 {
-            nextPhase()
-        }
-        updateCallback?()
-    }
-    
-    func nextPhase() {
-        currentPhaseIndex = (currentPhaseIndex + 1) % phases.count
-        countdownSeconds = phases[currentPhaseIndex].duration
-        phaseTransitionCallback?()
-        updateCallback?()
-    }
-    
-    private func scheduleTimer() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                self?.tick()
-            }
-            // Make sure the timer fires even when scrolling or during other UI interactions
-            RunLoop.main.add(self.timer!, forMode: .common)
-        }
-    }
-}
-
-// MARK: - Helper: Extract Editable Focus Text
-/// If the label is "FOCUS XXX!", returns "XXX"; otherwise returns the whole string.
-func extractEditableFocusText(from fullText: String) -> String {
-    let prefix = "FOCUS "
-    let suffix = "!"
-    if fullText.hasPrefix(prefix) && fullText.hasSuffix(suffix) {
-        let start = fullText.index(fullText.startIndex, offsetBy: prefix.count)
-        let end = fullText.index(fullText.endIndex, offsetBy: -suffix.count)
-        return String(fullText[start..<end])
-    }
-    return fullText
-}
-
-// MARK: - Confirmation Alert
-func showConfirmationAlert(title: String, message: String) -> Bool {
-    let alert = NSAlert()
-    alert.messageText = title
-    alert.informativeText = message
-    alert.alertStyle = .warning
-    alert.addButton(withTitle: "Confirm")
-    alert.addButton(withTitle: "Cancel")
-    
-    // The NSAlert window property isn't available until the alert is shown
-    let response = alert.runModal()
-    return (response == .alertFirstButtonReturn)
-}
-
-// MARK: - "Row View" for a uniform grid approach
-/// A row in the menu with left-aligned text. Optionally clickable, optionally closes menu.
-class MenuRowView: NSView {
-    private weak var target: AnyObject?
-    private let action: Selector?
-    private let closesMenu: Bool
-    private let isEnabled: Bool
-    private let textProvider: () -> String
-    
-    private var label: NSTextField!
-    
-    init(isEnabled: Bool,
-         closesMenu: Bool,
-         target: AnyObject?,
-         action: Selector?,
-         textProvider: @escaping () -> String) {
-        
-        self.isEnabled = isEnabled
-        self.closesMenu = closesMenu
-        self.target = target
-        self.action = action
-        self.textProvider = textProvider
-        
-        // Menu item dimensions
-        let _: CGFloat = 1.618
-        let width: CGFloat = 200
-        let height: CGFloat = 22  // Standard menu item height
-        super.init(frame: NSRect(x: 0, y: 0, width: width, height: height))
-        
-        // Label with fixed width to prevent shifting
-        label = NSTextField(frame: NSRect(x: 8, y: 1, width: width - 10, height: height - 2))
-        label.isEditable = false
-        label.isBordered = false
-        label.drawsBackground = false
-        label.font = NSFont.systemFont(ofSize: 13)
-        label.alignment = .left
-        label.lineBreakMode = .byTruncatingTail
-        
-        updateLabel()
-        addSubview(label)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    override func mouseDown(with event: NSEvent) {
-        guard isEnabled else { return }
-
-        // 1) If this row should close the menu, do so first
-        if closesMenu {
-            if let menu = self.enclosingMenuItem?.menu {
-                menu.cancelTracking()
-            }
-        }
-
-        // 2) Now perform the action (show the alert, etc.)
-        if let action = action, let tgt = target {
-            tgt.performSelector(onMainThread: action, with: nil, waitUntilDone: true)
-        }
-
-        // 3) Update the label text
-        updateLabel()
-    }
-    
-    private func updateLabel() {
-        let text = textProvider()
-        let color: NSColor
-        
-        if !isEnabled {
-            color = .gray
-        } else {
-            color = .labelColor
-        }
-        
-        let attr = NSAttributedString(string: text, attributes: [.foregroundColor: color])
-        label.attributedStringValue = attr
-    }
-}
-
-// MARK: - Make a custom row item
-func makeMenuRowItem(isEnabled: Bool,
-                     closesMenu: Bool,
-                     target: AnyObject?,
-                     action: Selector?,
-                     textProvider: @escaping () -> String) -> NSMenuItem {
-    
-    let item = NSMenuItem()
-    let row = MenuRowView(isEnabled: isEnabled,
-                          closesMenu: closesMenu,
-                          target: target,
-                          action: action,
-                          textProvider: textProvider)
-    item.view = row
-    return item
-}
-
-// MARK: - Utility: Create a status bar image
-func createStatusBarImage(text: String,
-                          backgroundColor: NSColor,
-                          textColor: NSColor) -> NSImage {
-    let barHeight = NSStatusBar.system.thickness - 6
-    let font = NSFont.systemFont(ofSize: 12)
-    let attributes: [NSAttributedString.Key: Any] = [.font: font]
-    let textSize = (text as NSString).size(withAttributes: attributes)
-    let imageWidth = textSize.width + 12
-    let imageHeight = barHeight
-    let size = NSSize(width: imageWidth, height: imageHeight)
-    
-    let image = NSImage(size: size)
-    image.lockFocus()
-    
-    let rect = NSRect(origin: .zero, size: size)
-    let path = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
-    backgroundColor.setFill()
-    path.fill()
-    
-    let paragraphStyle = NSMutableParagraphStyle()
-    paragraphStyle.alignment = .center
-    
-    let textAttrs: [NSAttributedString.Key: Any] = [
-        .foregroundColor: textColor,
-        .font: font,
-        .paragraphStyle: paragraphStyle
-    ]
-    let attrString = NSAttributedString(string: text, attributes: textAttrs)
-    let textRect = NSRect(x: 6,
-                          y: (imageHeight - textSize.height)/2,
-                          width: textSize.width,
-                          height: textSize.height)
-    attrString.draw(in: textRect)
-    
-    image.unlockFocus()
-    image.isTemplate = false
-    return image
-}
 
 // MARK: - AppDelegate
 class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindowDelegate {
@@ -375,8 +101,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
                 
                 // Position directly below the status item
                 // Use 0 on the y-axis for bottom alignment
-                let menuOrigin = NSPoint(x: locationInScreen.x, y: locationInScreen.y)
-                
+                _ = NSPoint(x: locationInScreen.x, y: locationInScreen.y)
+
                 // This uses a direct positioning approach which works on macOS
                 menu.popUp(positioning: nil, at: NSPoint(x: 0, y: 0), in: button)
             }
@@ -446,6 +172,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
             // Fixed width text using a constant-width format
             return String(format: "Prevent Sleep %@", self.preventSleepEnabled ? "(ON) " : "(OFF)")
         }))
+        menu.addItem(NSMenuItem.separator())
         
         // 6) Focus Phase X/4 - always gray/inactive
         menu.addItem(makeMenuRowItem(isEnabled: false,
@@ -454,12 +181,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
                                      action: nil,
                                      textProvider: { self.currentCycleLabel() }))
         
-        // 7) Reset App - gray in standby, white in running/pause
-        menu.addItem(makeMenuRowItem(isEnabled: isInActiveState,
-                                     closesMenu: true,
-                                     target: self,
-                                     action: #selector(resetPhases),
-                                     textProvider: { "Reset App" }))
+        // 7) Reset App - active only in running/paused state
+        let resetItem = NSMenuItem(title: "Reset App", action: #selector(resetPhases), keyEquivalent: "")
+        resetItem.target = self
+        // Disable and gray out in standby
+        resetItem.isEnabled = isInActiveState
+        let resetColor: NSColor = isInActiveState ? initialBackgroundColor : .darkGray
+        resetItem.attributedTitle = NSAttributedString(string: "Reset App", attributes: [.foregroundColor: resetColor])
+        menu.addItem(resetItem)
         
         // 8) Info - always white/active
         menu.addItem(makeMenuRowItem(isEnabled: true,
@@ -824,42 +553,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
     
     // MARK: - Show Info
     @objc func showInfo() {
+        print("🟢 showInfo called")
         NSApp.activate(ignoringOtherApps: true)
         
-        // Check if onboarding window is already open
-        if onboardingController != nil {
-            if let window = onboardingController?.window {
-                window.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-            }
+        // Check if onboarding window already exists
+        if let controller = onboardingController, let window = controller.window {
+            print("🔁 Reusing existing onboarding window")
+            // If window exists, just bring it to front
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
         
-        // Create and show the onboarding window
-        onboardingController = OnboardingWindowController.create()
-        onboardingController?.window?.delegate = self
+        print("🆕 Creating new onboarding window controller")
+        // Create the onboarding controller only once
+        let controller = OnboardingWindowController.create()
+        controller.window?.delegate = self
+        onboardingController = controller
+        print("📐 Positioning onboarding window")
         
-        // Center the window on screen
-        if let window = onboardingController?.window {
-            window.center()
+        // Position the window on screen
+        if let window = controller.window, let screen = NSScreen.main {
+            let screenRect = screen.visibleFrame
+            let windowRect = window.frame
+            let newOrigin = NSPoint(
+                x: screenRect.midX - windowRect.width / 2,
+                y: screenRect.midY - windowRect.height / 2
+            )
+            window.setFrameOrigin(newOrigin)
             
-            // Position it in the middle of the screen, accounting for the menu bar
-            if let screen = NSScreen.main {
-                let screenRect = screen.visibleFrame
-                let windowRect = window.frame
-                let newOrigin = NSPoint(
-                    x: screenRect.midX - windowRect.width / 2,
-                    y: screenRect.midY - windowRect.height / 2
-                )
-                window.setFrameOrigin(newOrigin)
-            }
-            
-            // Make the window visible
+            print("👁️ Showing onboarding window")
+            // Show the window only once
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
         }
-        
-        onboardingController?.showWindow(nil)
     }
     
     // MARK: - NSWindowDelegate
@@ -878,9 +605,14 @@ class OnboardingWindowController: NSWindowController {
     private var imageView: NSImageView!
     private var leftButton: NSButton!
     private var rightButton: NSButton!
+    private var cardLabel: NSTextField!
+    private let cardTextColor: NSColor = .white
+    // Use 'Snell Roundhand' for a handwriting style
+    private let cardTextFont: NSFont = NSFont(name: "Snell Roundhand", size: 18) ?? NSFont.systemFont(ofSize: 18, weight: .medium)
     
     // Convenience initializer
     static func create() -> OnboardingWindowController {
+        print("🛠️ OnboardingWindowController.create() called")
         // Size window to 3/5 of previous size (now roughly 1/3 of typical laptop screen)
         let width: CGFloat = 920
         let height: CGFloat = 575
@@ -889,7 +621,7 @@ class OnboardingWindowController: NSWindowController {
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
-            defer: false
+            defer: true  // Defer window display until explicitly shown
         )
         window.title = "FocusON Onboarding"
         window.titleVisibility = .hidden
@@ -897,14 +629,25 @@ class OnboardingWindowController: NSWindowController {
         window.backgroundColor = NSColor.windowBackgroundColor
         window.isMovableByWindowBackground = true
         
+        // Create controller without loading window automatically
         let controller = OnboardingWindowController(window: window)
-        // Load content immediately to fix empty window issue
+        
+        // Ensure window is not shown automatically
+        window.orderOut(nil)
+        
+        // Load content immediately but don't show the window yet
         controller.loadContent()
+        
         return controller
     }
     
     // New method to load content before window is shown
     private func loadContent() {
+        print("🖼️ loadContent called")
+        // Register custom 'Caveat' font (ensure 'Caveat-Regular.ttf' is in the bundle resources)
+        if let fontURL = Bundle.main.url(forResource: "Caveat-Regular", withExtension: "ttf") {
+            CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
+        }
         // Load onboarding images
         loadOnboardingImages()
         
@@ -917,17 +660,12 @@ class OnboardingWindowController: NSWindowController {
         updateUI()
     }
     
-    override func windowDidLoad() {
-        super.windowDidLoad()
-        // Window is already loaded in create() method
-    }
-    
     private func loadOnboardingImages() {
         // Placeholder - in a real app, you'd bundle actual onboarding images
         // For now, we'll create colored rectangles as placeholders
         let colors: [NSColor] = [.systemRed, .systemBlue, .systemGreen, .systemOrange]
         
-        for (index, color) in colors.enumerated() {
+        for color in colors {
             let image = NSImage(size: NSSize(width: 800, height: 500))
             image.lockFocus()
             
@@ -935,25 +673,16 @@ class OnboardingWindowController: NSWindowController {
             color.setFill()
             NSRect(x: 0, y: 0, width: 800, height: 500).fill()
             
-            // Draw text
-            let text = "Onboarding Screen \(index + 1)"
-            let font = NSFont.systemFont(ofSize: 36, weight: .bold)
-            let attributes: [NSAttributedString.Key: Any] = [
-                .foregroundColor: NSColor.white,
-                .font: font
-            ]
-            
-            let textSize = (text as NSString).size(withAttributes: attributes)
-            let textPoint = NSPoint(
-                x: (800 - textSize.width) / 2,
-                y: (500 - textSize.height) / 2
-            )
-            
-            (text as NSString).draw(at: textPoint, withAttributes: attributes)
-            
             image.unlockFocus()
             onboardingImages.append(image)
         }
+    }
+    
+    // Override showWindow to prevent automatic window display
+    // This ensures only AppDelegate.showInfo() controls window visibility
+    override func showWindow(_ sender: Any?) {
+        // Do nothing - this prevents NSWindowController from automatically showing the window
+        // Window will only be shown when makeKeyAndOrderFront is explicitly called
     }
     
     private func setupViews(in contentView: NSView) {
@@ -964,58 +693,81 @@ class OnboardingWindowController: NSWindowController {
         contentView.wantsLayer = true
         contentView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
         
-        // Create image view
+        // Setup main UI components
+        setupImageView(in: contentView)
+        setupNavigationButtons(in: contentView)
+        setupPageIndicator(in: contentView)
+        
+        // Add placeholder text label for onboarding cards
+        cardLabel = NSTextField(frame: .zero)
+        cardLabel.isEditable = false
+        cardLabel.isBordered = false
+        cardLabel.drawsBackground = false
+        cardLabel.textColor = cardTextColor
+        cardLabel.font = cardTextFont
+        cardLabel.alignment = .center
+        cardLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(cardLabel)
+        
+        setupConstraints(in: contentView)
+    }
+    
+    private func setupImageView(in contentView: NSView) {
         imageView = NSImageView(frame: contentView.bounds)
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(imageView)
+    }
+    
+    private func setupNavigationButtons(in contentView: NSView) {
+        // Create navigation buttons
+        leftButton = createButton(
+            in: contentView,
+            frame: NSRect(x: 20, y: contentView.bounds.height / 2 - 25, width: 50, height: 50),
+            title: "◀",
+            fontSize: 24,
+            cornerRadius: 25,
+            action: #selector(previousImage(_:))
+        )
         
-        // Create left arrow button
-        leftButton = NSButton(frame: NSRect(x: 20, y: contentView.bounds.height / 2 - 25, width: 50, height: 50))
-        leftButton.bezelStyle = .shadowlessSquare
-        leftButton.isBordered = false
-        leftButton.title = "◀"
-        leftButton.font = NSFont.systemFont(ofSize: 24, weight: .medium)
-        leftButton.contentTintColor = .white
-        leftButton.target = self
-        leftButton.action = #selector(previousImage(_:))
-        leftButton.translatesAutoresizingMaskIntoConstraints = false
-        leftButton.wantsLayer = true
-        leftButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
-        leftButton.layer?.cornerRadius = 25
-        contentView.addSubview(leftButton)
-        
-        // Create right arrow button
-        rightButton = NSButton(frame: NSRect(x: contentView.bounds.width - 70, y: contentView.bounds.height / 2 - 25, width: 50, height: 50))
-        rightButton.bezelStyle = .shadowlessSquare
-        rightButton.isBordered = false
-        rightButton.title = "▶"
-        rightButton.font = NSFont.systemFont(ofSize: 24, weight: .medium)
-        rightButton.contentTintColor = .white
-        rightButton.target = self
-        rightButton.action = #selector(nextImage(_:))
-        rightButton.translatesAutoresizingMaskIntoConstraints = false
-        rightButton.wantsLayer = true
-        rightButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
-        rightButton.layer?.cornerRadius = 25
-        contentView.addSubview(rightButton)
+        rightButton = createButton(
+            in: contentView,
+            frame: NSRect(x: contentView.bounds.width - 70, y: contentView.bounds.height / 2 - 25, width: 50, height: 50),
+            title: "▶",
+            fontSize: 24,
+            cornerRadius: 25,
+            action: #selector(nextImage(_:))
+        )
         
         // Create close button
-        let closeButton = NSButton(frame: NSRect(x: contentView.bounds.width - 70, y: contentView.bounds.height - 70, width: 40, height: 40))
-        closeButton.bezelStyle = .shadowlessSquare
-        closeButton.isBordered = false
-        closeButton.title = "✕"
-        closeButton.font = NSFont.systemFont(ofSize: 18, weight: .medium)
-        closeButton.contentTintColor = .white
-        closeButton.target = self
-        closeButton.action = #selector(close(_:))
-        closeButton.translatesAutoresizingMaskIntoConstraints = false
-        closeButton.wantsLayer = true
-        closeButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
-        closeButton.layer?.cornerRadius = 20
-        contentView.addSubview(closeButton)
-        
-        // Add page indicator
+        _ = createButton(
+            in: contentView,
+            frame: NSRect(x: contentView.bounds.width - 70, y: contentView.bounds.height - 70, width: 40, height: 40),
+            title: "✕",
+            fontSize: 18,
+            cornerRadius: 20,
+            action: #selector(close(_:))
+        )
+    }
+    
+    private func createButton(in contentView: NSView, frame: NSRect, title: String, fontSize: CGFloat, cornerRadius: CGFloat, action: Selector) -> NSButton {
+        let button = NSButton(frame: frame)
+        button.bezelStyle = .shadowlessSquare
+        button.isBordered = false
+        button.title = title
+        button.font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
+        button.contentTintColor = .white
+        button.target = self
+        button.action = action
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.wantsLayer = true
+        button.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
+        button.layer?.cornerRadius = cornerRadius
+        contentView.addSubview(button)
+        return button
+    }
+    
+    private func setupPageIndicator(in contentView: NSView) {
         let pageIndicator = NSTextField(frame: .zero)
         pageIndicator.isEditable = false
         pageIndicator.isBordered = false
@@ -1030,14 +782,26 @@ class OnboardingWindowController: NSWindowController {
         pageIndicator.wantsLayer = true
         pageIndicator.layer?.cornerRadius = 10
         contentView.addSubview(pageIndicator)
+    }
+    
+    private func setupConstraints(in contentView: NSView) {
+        // Get the close button for constraints
+        let closeButton = contentView.subviews.first { 
+            ($0 as? NSButton)?.action == #selector(close(_:)) 
+        } as? NSButton
+        
+        // Find the page indicator by tag
+        let pageIndicator = contentView.viewWithTag(100)
         
         // Set constraints
         NSLayoutConstraint.activate([
+            // Image view constraints
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             
+            // Navigation button constraints
             leftButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             leftButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             leftButton.widthAnchor.constraint(equalToConstant: 50),
@@ -1047,23 +811,43 @@ class OnboardingWindowController: NSWindowController {
             rightButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             rightButton.widthAnchor.constraint(equalToConstant: 50),
             rightButton.heightAnchor.constraint(equalToConstant: 50),
-            
-            closeButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-            closeButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            closeButton.widthAnchor.constraint(equalToConstant: 40),
-            closeButton.heightAnchor.constraint(equalToConstant: 40),
-            
-            pageIndicator.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
-            pageIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            pageIndicator.widthAnchor.constraint(equalToConstant: 100),
-            pageIndicator.heightAnchor.constraint(equalToConstant: 30)
         ])
+        
+        // Close button constraints
+        if let closeButton = closeButton {
+            NSLayoutConstraint.activate([
+                closeButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+                closeButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                closeButton.widthAnchor.constraint(equalToConstant: 40),
+                closeButton.heightAnchor.constraint(equalToConstant: 40)
+            ])
+        }
+        
+        // Page indicator constraints
+        if let pageIndicator = pageIndicator {
+            NSLayoutConstraint.activate([
+                pageIndicator.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
+                pageIndicator.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+                pageIndicator.widthAnchor.constraint(equalToConstant: 100),
+                pageIndicator.heightAnchor.constraint(equalToConstant: 30)
+            ])
+            
+            // Add constraints for cardLabel above the page indicator
+            if let cardLabel = cardLabel {
+                NSLayoutConstraint.activate([
+                    cardLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+                    cardLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+                    cardLabel.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.8)
+                ])
+            }
+        }
     }
     
     private func updateUI() {
         if !onboardingImages.isEmpty {
             imageView.image = onboardingImages[currentImageIndex]
-            
+            // Update dynamic placeholder label
+            cardLabel.stringValue = "Onboarding Screen \(currentImageIndex + 1)"
             // Update page indicator
             if let pageIndicator = window?.contentView?.viewWithTag(100) as? NSTextField {
                 pageIndicator.stringValue = "\(currentImageIndex + 1) / \(onboardingImages.count)"
@@ -1110,4 +894,4 @@ class OnboardingWindowController: NSWindowController {
         currentImageIndex = onboardingImages.count - 1
         updateUI()
     }
-}
+} 
