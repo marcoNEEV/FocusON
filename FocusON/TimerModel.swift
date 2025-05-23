@@ -28,6 +28,12 @@ class TimerModel {
     deinit {
         // Clean up timer to prevent memory leaks
         timer?.invalidate()
+        
+        // Ensure sleep prevention is disabled when TimerModel is deallocated
+        if let appDelegate = NSApp.delegate as? AppDelegate, appDelegate.preventSleepEnabled {
+            print("⚠️ TimerModel deinit - ensuring sleep prevention is disabled")
+            disablePreventSleep()
+        }
     }
     
     /// Starts the timer from the beginning of the first phase
