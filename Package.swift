@@ -1,0 +1,1 @@
+.package(url: "https://github.com/sindresorhus/LaunchAtLogin-Legacy", from: "5.0.0"), 

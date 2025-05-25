@@ -7,7 +7,6 @@ A macOS menu bar Pomodoro timer application designed to help you stay focused an
 - Simple Pomodoro timer with customizable focus and break durations
 - Menu bar integration for easy access
 - Visual timer with customizable labels
-- Prevent sleep mode during focus sessions
 - Optional timer display
 - Audio notification when phases change
 - Automatic startup on login (macOS 13.0+)
@@ -18,7 +17,6 @@ A macOS menu bar Pomodoro timer application designed to help you stay focused an
 - **Right-click** to access the settings menu:
   - Edit focus time durations
   - Customize focus text
-  - Toggle sleep prevention
   - Toggle timer display
   - Reset the timer
   - View app information
@@ -35,29 +33,3 @@ Default timers:
 ## Installation
 
 Download the latest release and move it to your Applications folder.
-
-## 🔋 Sleep Prevention System
-
-FocusON uses macOS's IOKit to prevent the system from sleeping during active focus sessions.
-
-### Key Implementation Details:
-- Uses `kIOPMAssertionTypePreventUserIdleSystemSleep` (via `IOPMAssertionCreateWithName`) to block idle sleep only while the timer is running.
-- Sleep prevention is **safely released** when:
-  - the timer is paused or reset
-  - the app is quit or terminated
-  - the timer deinitializes (as a safeguard)
-- This ensures the app never leaves behind active sleep assertions that could drain battery or cause heating issues.
-
-### Debug Logging
-
-To track sleep assertions and app state changes, FocusON includes a state-aware logging system:
-- Logging is **enabled only in DEBUG builds** using `#if DEBUG`.
-- You can toggle logging on/off with the `enableDebugLogging` flag.
-- Logs are optimized to avoid repetition (e.g., logging only when the UI or state changes).
-- All key user actions (start, pause, reset, quit) and assertion events are logged.
-
-To enable debug logs, set:
-
-```swift
-let enableDebugLogging = true
-```

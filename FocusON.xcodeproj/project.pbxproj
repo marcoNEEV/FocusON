@@ -17,6 +17,7 @@
 		9BB03F1F2DB8C28800A7F67A /* MenuBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F132DB8C28800A7F67A /* MenuBuilder.swift */; };
 		9BB03F212DB8C28800A7F67A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F152DB8C28800A7F67A /* ContentView.swift */; };
 		9BB03F222DB8C28800A7F67A /* Phase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB03F162DB8C28800A7F67A /* Phase.swift */; };
+		9BD82C072DE1E4C8008724DC /* SleepGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BD82C062DE1E4C8008724DC /* SleepGuard.swift */; };
 		9BE907C12D5CCDBA006B607C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C02D5CCDBA006B607C /* AppDelegate.swift */; };
 		9BE907C32D5CEA22006B607C /* FocusONApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE907C22D5CEA22006B607C /* FocusONApp.swift */; };
 /* End PBXBuildFile section */
@@ -37,6 +38,7 @@
 		9BB03F142DB8C28800A7F67A /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9BB03F152DB8C28800A7F67A /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9BB03F162DB8C28800A7F67A /* Phase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Phase.swift; sourceTree = "<group>"; };
+		9BD82C062DE1E4C8008724DC /* SleepGuard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SleepGuard.swift; path = FocusON/SleepGuard.swift; sourceTree = "<group>"; };
 		9BE907AE2D5CC670006B607C /* FocusON.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusON.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BE907B52D5CC673006B607C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9BE907B72D5CC673006B607C /* FocusON.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusON.entitlements; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 		9BE907B02D5CC670006B607C /* FocusON */ = {
 			isa = PBXGroup;
 			children = (
+				9BD82C062DE1E4C8008724DC /* SleepGuard.swift */,
 				9BE907B52D5CC673006B607C /* Assets.xcassets */,
 				9BE907B72D5CC673006B607C /* FocusON.entitlements */,
 				9BE907B82D5CC673006B607C /* Preview Content */,
@@ -203,6 +206,7 @@
 				9BB03F192DB8C28800A7F67A /* Utilities.swift in Sources */,
 				9BB03F182DB8C28800A7F67A /* AppDelegateExtensions.swift in Sources */,
 				9BB03F172DB8C28800A7F67A /* FocusON.swift in Sources */,
+				9BD82C072DE1E4C8008724DC /* SleepGuard.swift in Sources */,
 				9BB03F1F2DB8C28800A7F67A /* MenuBuilder.swift in Sources */,
 				9BB03F1A2DB8C28800A7F67A /* TimerModel.swift in Sources */,
 			);

@@ -15,6 +15,8 @@ class TimerModel {
     private(set) var countdownSeconds: Int = 0
     private(set) var timerState: TimerState = .notStarted
     private var timer: Timer?
+    // Add sleep-guard instance
+    let sleepGuard = SleepGuard()
     
     // Called every second or whenever a state changes
     var updateCallback: (() -> Void)?
@@ -25,22 +27,15 @@ class TimerModel {
         self.phases = phases
     }
     
-    deinit {
-        // Clean up timer to prevent memory leaks
-        timer?.invalidate()
-        
-        // Ensure sleep prevention is disabled when TimerModel is deallocated
-        if let appDelegate = NSApp.delegate as? AppDelegate, appDelegate.preventSleepEnabled {
-            print("⚠️ TimerModel deinit - ensuring sleep prevention is disabled")
-            disablePreventSleep()
-        }
-    }
-    
     /// Starts the timer from the beginning of the first phase
     func start() {
         currentPhaseIndex = 0
         countdownSeconds = phases[currentPhaseIndex].duration
         timerState = .running
+        AppState.shared.updateTimerState(.running)
+        if AppState.shared.preventSleep {
+            sleepGuard.begin(reason: "Pomodoro focus session")
+        }
         scheduleTimer()
         updateCallback?()
     }
@@ -50,12 +45,15 @@ class TimerModel {
         timer?.invalidate()
         timer = nil
         timerState = .paused
+        AppState.shared.updateTimerState(.paused)
+        sleepGuard.end()
         updateCallback?()
     }
     
     /// Resumes the timer from its paused state
     func resume() {
         timerState = .running
+        AppState.shared.updateTimerState(.running)
         scheduleTimer()
         updateCallback?()
     }
@@ -65,8 +63,10 @@ class TimerModel {
         timer?.invalidate()
         timer = nil
         timerState = .notStarted
+        AppState.shared.updateTimerState(.notStarted)
         countdownSeconds = 0
         currentPhaseIndex = 0
+        sleepGuard.end()
         updateCallback?()
     }
     
@@ -96,6 +96,7 @@ class TimerModel {
             }
             // Make sure the timer fires even when scrolling or during other UI interactions
             RunLoop.main.add(self.timer!, forMode: .common)
+
         }
     }
 } 
