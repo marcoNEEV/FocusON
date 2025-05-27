@@ -14,7 +14,9 @@ class TimerModel {
     private(set) var currentPhaseIndex: Int = 0
     private(set) var countdownSeconds: Int = 0
     private(set) var timerState: TimerState = .notStarted
-    private var timer: Timer?
+    // MARK: - Thread-safe, high-precision timer
+    private var timerSource: DispatchSourceTimer?
+    private let timerQueue = DispatchQueue(label: "com.yourcompany.FocusON.timer")
     // Add sleep-guard instance
     let sleepGuard = SleepGuard()
     
@@ -42,8 +44,8 @@ class TimerModel {
     
     /// Pauses the current timer without resetting it
     func pause() {
-        timer?.invalidate()
-        timer = nil
+        timerSource?.cancel()
+        timerSource = nil
         timerState = .paused
         AppState.shared.updateTimerState(.paused)
         sleepGuard.end()
@@ -60,8 +62,8 @@ class TimerModel {
     
     /// Resets the timer to initial state
     func reset() {
-        timer?.invalidate()
-        timer = nil
+        timerSource?.cancel()
+        timerSource = nil
         timerState = .notStarted
         AppState.shared.updateTimerState(.notStarted)
         countdownSeconds = 0
@@ -87,16 +89,28 @@ class TimerModel {
         updateCallback?()
     }
     
-    /// Creates and schedules the timer on the main thread
+    /// Creates and schedules the timer on a dedicated queue
     private func scheduleTimer() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                self?.tick()
-            }
-            // Make sure the timer fires even when scrolling or during other UI interactions
-            RunLoop.main.add(self.timer!, forMode: .common)
-
+        // Cancel any existing source
+        timerSource?.cancel()
+        timerSource = DispatchSource.makeTimerSource(queue: timerQueue)
+        // Fire every second
+        timerSource?.schedule(deadline: .now() + 1.0, repeating: 1.0)
+        timerSource?.setEventHandler { [weak self] in
+            DispatchQueue.main.async { self?.tick() }
+        }
+        timerSource?.resume()
+    }
+    
+    deinit {
+        // Cancel any active timer source
+        timerSource?.cancel()
+        timerSource = nil
+        
+        // Ensure sleep prevention is disabled when TimerModel deallocates
+        if let appDelegate = NSApp.delegate as? AppDelegate, appDelegate.preventSleepEnabled {
+            print("⚠️ TimerModel deinit - disabling sleep prevention")
+            sleepGuard.end()
         }
     }
 } 
