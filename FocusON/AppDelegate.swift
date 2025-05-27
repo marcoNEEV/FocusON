@@ -351,206 +351,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
     
     // MARK: - Show Focus Text Input
     @objc func showFocusTextInput() {
-        // logPopupState(isOpening: true)
-        NSApp.activate(ignoringOtherApps: true)
+        let currentPhaseLabel = timerModel.phases.first { $0.type == .focus }?.label ?? "FOCUS ON!"
         
-        let focusPhase = timerModel.phases.first { $0.type == .focus }?.label ?? "FOCUS ON!"
-        let editable = extractEditableFocusText(from: focusPhase)
-        
-        let (alert, inputField) = buildFocusTextAlert(currentText: editable)
-        
-        // Make alert modal at application level
-        alert.window.level = .modalPanel
-        
-        let resp = alert.runModal()
-        if resp == .alertFirstButtonReturn {
-            updateFocusPhaseLabel(with: inputField.stringValue)
+        Task { @MainActor in
+            WindowManager.shared.showTextInputAlert(
+                key: "phaseTimesInput",
+                title: "Edit Focus Label",
+                message: "Enter a label (max 6 characters)",
+                defaultText: currentPhaseLabel,
+                completion: { newText in
+                    Task { @MainActor in
+                        WindowManager.shared.updateFocusPhaseLabel(newText ?? currentPhaseLabel)
+                    }
+                }
+            )
         }
-        // logPopupState(isOpening: false)
-    }
-    
-    private func buildFocusTextAlert(currentText: String) -> (NSAlert, NSTextField) {
-        let alert = NSAlert()
-        alert.messageText = "Edit the focus text"
-        alert.informativeText = "You can edit the 'ON' in the text (max 6 chars)."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancel")
-        
-        let inputField = NSTextField(frame: NSRect(x:0, y:0, width:200, height:24))
-        inputField.delegate = self
-        inputField.stringValue = currentText
-        inputField.tag = 2001
-        alert.accessoryView = inputField
-        
-        return (alert, inputField)
-    }
-    
-    func updateFocusPhaseLabel(with newText: String) {
-        for (i, ph) in timerModel.phases.enumerated() {
-            if ph.type == .focus {
-                let updatedLabel = "FOCUS \(newText)!"
-                timerModel.phases[i] = Phase(duration: ph.duration,
-                                             backgroundColor: ph.backgroundColor,
-                                             label: updatedLabel,
-                                             type: .focus)
-            }
-        }
-        updateUI()
     }
     
     // MARK: - Show Phase Times
     @objc func showPhaseTimesInput() {
-        // logPopupState(isOpening: true)
-        NSApp.activate(ignoringOtherApps: true)
-        
-        let cFocus = timerModel.phases[0].duration / 60
-        let cShort = timerModel.phases[1].duration / 60
-        let cLong  = timerModel.phases[7].duration / 60
-        
-        let (alert, fields) = buildPhaseTimesAlert(currentFocus: cFocus,
-                                                   currentShort: cShort,
-                                                   currentLong: cLong)
-        
-        // Set to highest level after showing the alert
-        NSApp.activate(ignoringOtherApps: true) // Ensure our app is in front
-        
-        let resp = alert.runModal()
-        
-        if resp == .alertFirstButtonReturn {
-            guard fields.count == 3 else { return }
-            let fField = fields[0]
-            let sField = fields[1]
-            let lField = fields[2]
-            
-            let fTime = Int(fField.stringValue) ?? cFocus
-            let sTime = Int(sField.stringValue) ?? cShort
-            let lTime = Int(lField.stringValue) ?? cLong
-            
-            let newFocus = fTime * 60
-            let newShort = sTime * 60
-            let newLong  = lTime * 60
-            
-            for (i, ph) in timerModel.phases.enumerated() {
-                switch ph.type {
-                case .focus:
-                    timerModel.phases[i] = Phase(duration: newFocus,
-                                                 backgroundColor: .red,
-                                                 label: "FOCUS ON!",
-                                                 type: .focus)
-                case .relax:
-                    let updatedDur = (i == 7) ? newLong : newShort
-                    let updatedLbl = (i == 7) ? "RELAX!" : "RELAX"
-                    timerModel.phases[i] = Phase(duration: updatedDur,
-                                                 backgroundColor: .systemPink,
-                                                 label: updatedLbl,
-                                                 type: .relax)
+        Task { @MainActor in
+            WindowManager.shared.showAlert(
+                key: "phaseTimesInput",
+                title: "Timer Settings",
+                message: "Configure focus and break durations",
+                style: .informational,
+                buttons: ["OK", "Cancel"]
+            ) { response in
+                if response == .alertFirstButtonReturn {
+                    // handle OK
                 }
             }
-            updateUI()
         }
-        // logPopupState(isOpening: false)
-    }
-    
-    private func buildPhaseTimesAlert(currentFocus: Int,
-                                      currentShort: Int,
-                                      currentLong: Int) -> (NSAlert, [NSTextField]) {
-        let alert = NSAlert()
-        alert.messageText = "Timer Settings"
-        alert.informativeText = "Set the duration (in minutes) for each phase."
-        alert.alertStyle = .informational
-        
-        // Create a blue "Confirm" button
-        let confirmButton = alert.addButton(withTitle: "Confirm")
-        confirmButton.keyEquivalent = "\r" // Return key
-        let buttonCell = confirmButton.cell as? NSButtonCell
-        buttonCell?.backgroundColor = NSColor.systemBlue
-        
-        alert.addButton(withTitle: "Cancel")
-        
-        // Golden ratio for landscape container (1.618:1)
-        let containerWidth: CGFloat = 380
-        let containerHeight: CGFloat = 160
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: containerWidth, height: containerHeight))
-        
-        // Field parameters
-        let fieldWidth: CGFloat = 80
-        let fieldHeight: CGFloat = 30
-        let spacing: CGFloat = 60
-        let totalWidth = 3 * fieldWidth + 2 * spacing
-        let marginX = (containerWidth - totalWidth) / 2
-        let marginY: CGFloat = 35
-        
-        // Labels
-        let labelWidth: CGFloat = 90
-        let labelHeight: CGFloat = 20
-        
-        // Focus label and field
-        let focusLabel = NSTextField(frame: NSRect(x: marginX + (fieldWidth - labelWidth)/2, y: containerHeight - marginY - labelHeight, 
-                                                  width: labelWidth, height: labelHeight))
-        focusLabel.isEditable = false
-        focusLabel.isBordered = false
-        focusLabel.drawsBackground = false
-        focusLabel.stringValue = "Focus"
-        focusLabel.alignment = .center
-        focusLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        container.addSubview(focusLabel)
-        
-        let fField = NSTextField(frame: NSRect(x: marginX, y: containerHeight - marginY - labelHeight - fieldHeight - 5, 
-                                              width: fieldWidth, height: fieldHeight))
-        fField.alignment = .center
-        fField.delegate = self
-        fField.tag = 1001
-        fField.stringValue = "\(currentFocus)"
-        fField.font = NSFont.systemFont(ofSize: 14)
-        container.addSubview(fField)
-        
-        // Short Break label and field
-        let shortLabel = NSTextField(frame: NSRect(x: marginX + fieldWidth + spacing + (fieldWidth - labelWidth)/2, 
-                                                  y: containerHeight - marginY - labelHeight, 
-                                                  width: labelWidth, height: labelHeight))
-        shortLabel.isEditable = false
-        shortLabel.isBordered = false
-        shortLabel.drawsBackground = false
-        shortLabel.stringValue = "Short Break"
-        shortLabel.alignment = .center
-        shortLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        container.addSubview(shortLabel)
-        
-        let sField = NSTextField(frame: NSRect(x: marginX + fieldWidth + spacing, 
-                                              y: containerHeight - marginY - labelHeight - fieldHeight - 5, 
-                                              width: fieldWidth, height: fieldHeight))
-        sField.alignment = .center
-        sField.delegate = self
-        sField.tag = 1001
-        sField.stringValue = "\(currentShort)"
-        sField.font = NSFont.systemFont(ofSize: 14)
-        container.addSubview(sField)
-        
-        // Long Break label and field
-        let longLabel = NSTextField(frame: NSRect(x: marginX + 2 * (fieldWidth + spacing) + (fieldWidth - labelWidth)/2, 
-                                                 y: containerHeight - marginY - labelHeight, 
-                                                 width: labelWidth, height: labelHeight))
-        longLabel.isEditable = false
-        longLabel.isBordered = false
-        longLabel.drawsBackground = false
-        longLabel.stringValue = "Long Break"
-        longLabel.alignment = .center
-        longLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        container.addSubview(longLabel)
-        
-        let lField = NSTextField(frame: NSRect(x: marginX + 2 * (fieldWidth + spacing), 
-                                              y: containerHeight - marginY - labelHeight - fieldHeight - 5, 
-                                              width: fieldWidth, height: fieldHeight))
-        lField.alignment = .center
-        lField.delegate = self
-        lField.tag = 1001
-        lField.stringValue = "\(currentLong)"
-        lField.font = NSFont.systemFont(ofSize: 14)
-        container.addSubview(lField)
-        
-        alert.accessoryView = container
-        return (alert, [fField, sField, lField])
     }
     
     // MARK: - Sound
@@ -601,12 +433,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
     }
     
     @objc func terminateApp() {
-        // logPopupState(isOpening: true)
-        NSApp.activate(ignoringOtherApps: true)
-        let confirmed = showConfirmationAlert(title: "Confirm Termination", message: "")
-        // logPopupState(isOpening: false)
-        if confirmed {
-            NSApp.terminate(nil)
+        Task { @MainActor in
+            WindowManager.shared.showAlert(
+                key: "terminate",
+                title: "Confirm Termination",
+                message: "Are you sure you want to quit?",
+                style: .warning,
+                buttons: ["Cancel", "Quit"],
+                defaultButtonIndex: 0,  // Make Cancel the default (blue) button
+                destructiveButtonIndex: 1,  // Make Quit the destructive button
+                completion: { response in
+                    if response == .alertSecondButtonReturn {
+                        NSApp.terminate(nil)
+                    }
+                }
+            )
         }
     }
     
@@ -647,7 +488,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
             }
         } else if tf.tag == 2001 {
             if tf.stringValue.count > 6 {
-                tf.stringValue = String(tf.stringValue.prefix(6))
+                tf.stringValue.removeLast()
             }
         }
     }
@@ -670,24 +511,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate, NSWindo
     }
     
     // MARK: - Show Info
+    @MainActor
     @objc func showInfo() {
-        print("🆕 showInfo called")
-        
-        // Check if onboarding window already exists
-        if let controller = onboardingController, let window = controller.window {
-            print("🔁 Reusing existing onboarding window")
-            WindowManager.shared.showWindow(window)
-            return
-        }
-        
-        print("🆕 Creating new onboarding window controller")
-        let controller = OnboardingWindowController.create()
-        controller.window?.delegate = WindowManager.shared
-        onboardingController = controller
-        
-        if let window = controller.window {
-            WindowManager.shared.showWindow(window)
-        }
+        print(" showInfo called")
+        Task { @MainActor in WindowManager.shared.showOnboardingWindow() }
     }
     
     // MARK: - Sleep/Wake Notifications
@@ -1146,32 +973,6 @@ class OnboardingWindowController: NSWindowController {
     @objc func wrapToLastImage(_ sender: NSButton) {
         currentImageIndex = onboardingImages.count - 1
         updateUI()
-    }
-}
-
-class WindowManager {
-    static let shared = WindowManager()
-    private var activeWindows: Set<NSWindow> = []
-    private var isShowingAlert = false
-    
-    func showWindow(_ window: NSWindow) {
-        activeWindows.insert(window)
-        window.delegate = self
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-    
-    func closeAllWindows() {
-        activeWindows.forEach { $0.close() }
-        activeWindows.removeAll()
-    }
-}
-
-extension WindowManager: NSWindowDelegate {
-    func windowWillClose(_ notification: Notification) {
-        if let window = notification.object as? NSWindow {
-            activeWindows.remove(window)
-        }
     }
 }
 
